@@ -3,7 +3,7 @@ import AVFoundation
 import Combine
 import Helpers
 
-public final class SleepRecorder {
+public final class NoiseRecorder {
 
     private let audioEngine = AVAudioEngine()
 
@@ -78,7 +78,7 @@ public final class SleepRecorder {
         outputFileProvider.action = .closeFile
     }
 
-    public func finish() {
+    public func stop() {
         shouldActuallyRecord = false
         audioEngine.cleanupRecording()
         outputFileProvider.action = .closeFile
