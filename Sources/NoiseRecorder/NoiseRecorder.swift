@@ -7,9 +7,8 @@ public final class NoiseRecorder {
 
     private let audioEngine = AVAudioEngine()
 
-    @Published private var shouldActuallyRecord: Bool = false
-
     private let outputFileProvider: AudioFileProvider
+    private var bufferPublisher: AnyPublisher<AVAudioPCMBuffer, Never>?
 
     var cancellables = Set<AnyCancellable>()
 
@@ -17,22 +16,28 @@ public final class NoiseRecorder {
         outputFileProvider = AudioFileProvider(pathGenerator)
     }
 
-    // MARK: AudioItemHandler
+    /// Installs tap and attaches publisher that will poduce buffers of audio data
+    public func activateAudioEngine() {
+        bufferPublisher = audioEngine.tapBuffer()
+    }
 
     public func prepare() {
 
+        if bufferPublisher == nil {
+            guard Thread.isMainThread else {
+                fatalError("audio engine should be activated from foreground")
+            }
+            activateAudioEngine()
+        }
+
+        // pause engine while setting up subscriptions because there may be some input in buffer from pevious player session
+        audioEngine.pause()
+        
         let bufferHandlingQueue = DispatchQueue(label: "sleep.recorder.bufferOutput.serial.queue")
 
-        /// provide buffer only when it is actually needed: shouldActuallyRecord == true
-        let bufferPublisher = audioEngine.recordingBufferPublisher
-            .combineLatest($shouldActuallyRecord)
-            .filter { $0.1 }
-            .map { $0.0 }
-            .subscribe(on: bufferHandlingQueue, options: .none)
-            .share()
-
-        let bufferFilePairPublisher = bufferPublisher
+        let bufferFilePairPublisher = bufferPublisher!
             .combineLatest(outputFileProvider.outputFile)
+            .subscribe(on: bufferHandlingQueue)
             .receive(on: bufferHandlingQueue)
             .share()
 
@@ -61,16 +66,9 @@ public final class NoiseRecorder {
     }
 
     public func run() {
-        // audioengine is running initially because it should be started in foreground.
-        // this guard check fires up actual recording once for already running session.
-        // otherwise we should control the audio engine state explicitly in case session was paused or interrupted.
-        guard shouldActuallyRecord else {
-            shouldActuallyRecord = true
-            return
+        if !audioEngine.isRunning {
+            try? audioEngine.start()
         }
-
-        audioEngine.prepare()
-        try? audioEngine.start()
     }
 
     public func pause() {
@@ -79,7 +77,6 @@ public final class NoiseRecorder {
     }
 
     public func stop() {
-        shouldActuallyRecord = false
         audioEngine.cleanupRecording()
         outputFileProvider.action = .closeFile
     }

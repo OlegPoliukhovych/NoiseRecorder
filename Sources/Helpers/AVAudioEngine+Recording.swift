@@ -4,28 +4,21 @@ import Combine
 
 public extension AVAudioEngine {
 
-    var recordingBufferPublisher: AnyPublisher<AVAudioPCMBuffer, Never> {
+    func tapBuffer() -> AnyPublisher<AVAudioPCMBuffer, Never> {
 
-        Deferred<AnyPublisher<AVAudioPCMBuffer, Never>> { [unowned self] in
-
-            let subject = PassthroughSubject<AVAudioPCMBuffer, Never>()
-            self.inputNode.installTap(onBus: 0,
-                                      bufferSize: 4096,
-                                      format: self.inputNode.outputFormat(forBus: 0)) { buffer, time in
-                                        subject.send(buffer)
-            }
-
-            self.prepare()
-            do {
-                try self.start()
-            } catch {
-                assertionFailure("failed starting recording audio with error: \(error.localizedDescription)")
-            }
-
-            return subject
-                .eraseToAnyPublisher()
+        let subject = PassthroughSubject<AVAudioPCMBuffer, Never>()
+        self.inputNode.installTap(onBus: 0,
+                                  bufferSize: 4096,
+                                  format: self.inputNode.outputFormat(forBus: 0)) { buffer, time in
+            subject.send(buffer)
         }
-        .eraseToAnyPublisher()
+        self.prepare()
+        do {
+            try self.start()
+        } catch {
+            assertionFailure("failed starting recording audio with error: \(error.localizedDescription)")
+        }
+        return subject.eraseToAnyPublisher()
     }
 
     func cleanupRecording() {

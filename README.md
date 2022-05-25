@@ -13,16 +13,21 @@ let pathGeneratorFunction = { path.appendingPathComponent(UUID().uuidString) }
 /// create noise recorder instance
 let noiseRecorder = NoiseRecorder(pathGenerator: pathGeneratorFunction)
 ```
-Before noise recorder can start to monitor audio input it should configure internal bindings. Call `prepare()` to do that.
-Make sure to prepare object while in foreground because `AVAudioEngine` will not be started on background.
+Next step is to activate audio engine and receive audio input buffer.
+**Important** `activateAudioEngine()` should be called from foreground otherwise there will be runtime error.
 ```swift
 noiseRecorder.prepare()
 ```
-Then session can start monitoring audio input and write it to files.
+
+Then configure internal subsciptions to handle audio input. Call `prepare()` for that.
+```swift
+noiseRecorder.prepare()
+```
+Then start session to actually handle audio input.
 ```swift
 noiseRecorder.run()
 ```
-Audio recording can be paused or finished.
+Audio recording can be paused or stopped.
 ```swift
 /// pause recording session
 noiseRecorder.pause()

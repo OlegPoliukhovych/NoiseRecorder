@@ -23,7 +23,7 @@ public final class AudioFileProvider {
             .eraseToAnyPublisher()
     }
 
-    @Published public var action: AudioFileProvider.Action = .createFile
+    @Published public var action: AudioFileProvider.Action = .closeFile
 
     public init(_ pathGenerator: @escaping () -> URL) {
         self.pathGenetor = pathGenerator
