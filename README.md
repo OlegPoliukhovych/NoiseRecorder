@@ -16,7 +16,7 @@ let noiseRecorder = NoiseRecorder(pathGenerator: pathGeneratorFunction)
 Next step is to activate audio engine and receive audio input buffer.
 **Important** `activateAudioEngine()` should be called from foreground otherwise there will be runtime error.
 ```swift
-noiseRecorder.prepare()
+noiseRecorder.activateAudioEngine()
 ```
 
 Then configure internal subsciptions to handle audio input. Call `prepare()` for that.
